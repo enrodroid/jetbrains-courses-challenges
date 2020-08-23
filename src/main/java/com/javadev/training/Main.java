@@ -34,8 +34,8 @@ public class Main {
       blockchain.buildNextBlock("data extra");
     }
     out.print(blockchain);
-    out.println("Valid blockchain?: " + (blockchain.validateChain() ? "YES" : "NOP"));
-    blockchain.breakChain();
+    out.println("Valid blockchain?: " + (blockchain.isValid() ? "YES" : "NOP"));
+    blockchain.destroy();
   }
   
   public static void main(String[] args) {

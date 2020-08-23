@@ -1,10 +1,7 @@
 package com.javadev.training.blockchain;
 
 import java.io.Serializable;
-import java.util.LinkedHashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 public class Blockchain implements Serializable {
   protected static final long serialVersionUID = 1L;
@@ -12,7 +9,7 @@ public class Blockchain implements Serializable {
   private static final String DEFAULT_PREV_HASH = "0";
   private final int minePrefix;
   
-  private final List<Block> blocks = new LinkedList<>();
+  private final List<Block> chain = new LinkedList<>();
   
   public Blockchain() {
     this(0);
@@ -23,7 +20,7 @@ public class Blockchain implements Serializable {
   }
   
   public String getMinePrefixStr() {
-    return !blocks.isEmpty() ? blocks.get(0).getPrefixStr() : null;
+    return !chain.isEmpty() ? chain.get(0).getPrefixStr() : null;
   }
   
   public void buildNextBlock() {
@@ -31,65 +28,59 @@ public class Blockchain implements Serializable {
   }
   
   public Block buildNextBlock(String metadata) {
-    boolean empty = blocks.isEmpty();
-    final int size = blocks.size();
+    final boolean empty = chain.isEmpty();
+    final int size = chain.size();
     final Block block = new Block(
         empty ? 1 : size + 1,
-        empty ? DEFAULT_PREV_HASH : blocks.get(size - 1).getHash(),
+        empty ? DEFAULT_PREV_HASH : chain.get(size - 1).getHash(),
         metadata,
         minePrefix
     );
-    blocks.add(block);
+    chain.add(block);
     return block;
   }
   
   /**
    * Validate that the entire blockchain satisfies the following prerequisites:
    * 1. The hash of the block matches the hash generated from the value of its attributes.
-   * 2. That the reference to the hash of the previous block is only the default for the first block and,
-   * 2.1. for others, the reference to the previous hash of the current block is equal to the hash of the previous block.
+   * 2. The reference to hash of previous block is only the default for the first block and,
+   * 2.1. for rest, the reference to previous hash of current block is equal to the hash of previous block.
    * 3. The block hash complies with the preset prefix precondition.
+   * 4. The chain can't contain repeated hashes.
    *
    * @return indicate if the blockchain is correctly formed.
    */
-  public boolean validateChain() {
-    boolean flag = true;
-    
-    int counter = 0;
-    int blockSize = blocks.size();
-    
-    Block prev = null;
-    Block current;
-    String currentPrevHashRef;
-    Set<String> bcHashes = new LinkedHashSet<>();
-    while (blockSize > counter && flag) {
-      current = blocks.get(counter++);
-      currentPrevHashRef = current.getPreviousHash();
-      
-      flag = current.getHash().equals(current.computeCurrentHash()) && // Comparing the current hash with a regenerated one.
-          
-          // verify that previous hash reference correspond in both blocks.
-          currentPrevHashRef.equals(prev != null ? prev.getHash() : DEFAULT_PREV_HASH) &&
-          
-          // verify that no hash in the chain repeats.
-          bcHashes.add(currentPrevHashRef) &&
-          
-          // Verify that the generated and assigned hash has the same prefix string previously defined.
-          current.verifyMineCriteria(getMinePrefixStr());
-      
-      prev = current;
+  public boolean isValid() {
+    boolean valid = true;
+    ListIterator<Block> it = chain.listIterator();
+    if (!chain.isEmpty()) {
+      Block c;                      // Current block vessel.
+      Block p = it.next();          // Prev block would be the first in the list.
+      String tmpCH;                 // Temporal current hash reference.
+      String tmpPH;                 // Temporal previous hash reference.
+      Set<String> uniqueHashChain = new LinkedHashSet<>();
+      do {
+        c = it.next();
+        tmpCH = c.getHash();
+        tmpPH = c.getPreviousHash();
+        valid = tmpCH.equals(c.computeCurrentHash()) && // Comparing the current hash with a regenerated one.
+            tmpPH.equals(p.getHash()) &&                // Check that the previous hash are equals.
+            c.verifyMineCriteria(getMinePrefixStr()) && // Check that current and assigned hash have the same prefix code.
+            uniqueHashChain.add(tmpCH);                 // Ensuring there are no repeated hashes.
+        p = c;
+      } while (it.hasNext() && valid);
     }
-    return flag;
+    return valid;
   }
   
-  public void breakChain() {
-    blocks.clear();
+  public void destroy() {
+    chain.clear();
   }
   
   @Override
   public String toString() {
     StringBuilder buffer = new StringBuilder();
-    for (Block block : blocks) {
+    for (Block block : chain) {
       buffer.append(block.toString()).append("\n\n");
     }
     return buffer.toString();

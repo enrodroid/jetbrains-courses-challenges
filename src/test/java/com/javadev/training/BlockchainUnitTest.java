@@ -9,7 +9,9 @@ import org.junit.jupiter.api.Test;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public class BlockchainUnitTest {
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+class BlockchainUnitTest {
   private static final Logger logger = Logger.getLogger(BlockchainUnitTest.class.getName());
   
   private static final int PREFIX = 4;
@@ -18,32 +20,28 @@ public class BlockchainUnitTest {
   private static final Blockchain blockchain = new Blockchain(PREFIX);
   
   @BeforeAll
-  public static void beforeClass() {
+  static void beforeClass() {
     blockchain.buildNextBlock("I'm the very first block.");
     blockchain.buildNextBlock("I'm the first next one block.");
-    
     logger.log(Level.INFO, "Before class setup executed!");
   }
   
   @Test
-  public void whenAddBlockToBlockchainCheckHashMiningThenSuccess() {
+  void whenAddBlockToBlockchainCheckHashMiningThenSuccess() {
     Block newBlock = blockchain.buildNextBlock("I'm the 2nd next one block.");
     assert newBlock.verifyMineCriteria(PREFIX_STR);
-    
     logger.log(Level.INFO, "Testing criteria of hashing success!");
   }
   
   @Test
-  public void whenValidateBlockchainThenSuccess() {
-    assert blockchain.validateChain();
-    
+  void whenValidateBlockchainThenSuccess() {
+    assertTrue(blockchain.isValid());
     logger.log(Level.INFO, "Testing validity of entire blockchain terminated!");
   }
   
   @AfterAll
-  public void tearDown() {
-    blockchain.breakChain();
-    
+  static void tearDown() {
+    blockchain.destroy();
     logger.log(Level.INFO, "Testing process terminated!");
   }
 }
